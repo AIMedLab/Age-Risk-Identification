@@ -1,3 +1,11 @@
+library(dplyr)
+library(reshape2)
+library(stringr)
+library(hash)
+library(rcompanion)
+library(speedglm)
+library(lmtest)
+library(compare)
 
 
 #group by age
@@ -13,20 +21,12 @@ drug_outcome_demo$age_code[drug_outcome_demo$age_code == '(0,14]'] = 'children'
 
 
 
-
-
-
 #step1: overall chi-squared test for each drug
-
-library(dplyr)
-library(reshape2)
 
 drug_outcome_demo['count'] = 1
 
-
 adrpair_age = data.frame(drug_outcome_demo %>% group_by(drug_concept_id,outcome_concept_id,age_code) %>% summarize(count = sum(count))) # unique drug-ADR-group count
 adrpair_age = adrpair_age[complete.cases(adrpair_age), ]
-
 
 drug_overall_test = data.frame(unique(adrpair_age$drug_concept_id))  
 
@@ -63,11 +63,7 @@ drug_overall_test[which(drug_overall_test$p_value_adj <= 0.05),'overall.diff'] =
 drug_overall_test[which(drug_overall_test$p_value_adj > 0.05),'overall.diff'] = 'FALSE'
 
 
-
 #step2: overall chi-squared test for drug-ADR pair
-
-library(dplyr)
-library(reshape2)
 
 adrpair_age_2  = adrpair_age[which(adrpair_age$drug_concept_id %in% drug_overall_test[which(drug_overall_test$overall.diff=='TRUE'),'drug_concept_id']=='TRUE'),] 
 adrpair_age_2 = adrpair_age_2 %>% group_by(drug_concept_id,outcome_concept_id)%>% summarise(total_count = sum(count)) # unique sig.drug-ADR count
@@ -108,12 +104,7 @@ adrpair_age_2[which(adrpair_age_2$p_value_adj <= 0.05),'overall.diff'] = 'TRUE'
 adrpair_age_2[which(adrpair_age_2$p_value_adj > 0.05),'overall.diff'] = 'FALSE'
 
 
-
 #step3: chi-squared tests for each drug-ADR pair
-
-library(dplyr)
-library(reshape2)
-library(rcompanion)
 
 adrpair_sig = adrpair_age_2[which(adrpair_age_2$overall.diff=='TRUE'),] # all sig.pairs
 adrpair_age_3 = adrpair_age[which(adrpair_age$drug_concept_id %in% drug_overall_test[which(drug_overall_test$overall.diff=='TRUE'),'drug_concept_id']=='TRUE'),] # all sig.drugs
@@ -204,8 +195,6 @@ pairwise42_result = function(k, pairwise, contingency_table){
 
 
 
-
-
 for (k in 1:nrow(adrpair_sig)){
   list = adrpair_age_3[which(adrpair_age_3$drug_concept_id==adrpair_sig[[k,'drug_concept_id']] & adrpair_age_3$outcome_concept_id==adrpair_sig[[k,'outcome_concept_id']]),] # pair count
   all_list = adrpair_age_3[which(adrpair_age_3$drug_concept_id==adrpair_sig[[k,'drug_concept_id']]),] # drug count
@@ -266,10 +255,6 @@ for (k in 1:nrow(adrpair_sig)){
 
 
 # format
-library(dplyr)
-library(reshape2)
-library(stringr)
-library(hash)
 
 pairwise_2$result=0
 for (i in 1:nrow(pairwise_2)){
@@ -334,15 +319,7 @@ pairwise_regression = rbind(pairwise_2, pairwise_3)
 pairwise_regression = rbind(pairwise_regression, pairwise_4)
 
 
-
-
 #step4: logistic regression & lrt test
-
-
-library(speedglm)
-library(lmtest)
-library(compare)
-library(dplyr)
 
 sig_pairs = pairwise_regression[,c('drug_concept_id','outcome_concept_id','sig_group')]
 sig_pairs$lrt_p = -1
